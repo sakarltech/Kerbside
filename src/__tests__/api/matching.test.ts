@@ -59,8 +59,8 @@ describe("POST /api/matching", () => {
   let POST: (request: NextRequest) => Promise<Response>;
 
   beforeAll(async () => {
-    const module = await import("@/app/api/matching/route");
-    POST = module.POST;
+    const routeModule = await import("@/app/api/matching/route");
+    POST = routeModule.POST;
   });
 
   beforeEach(() => {
