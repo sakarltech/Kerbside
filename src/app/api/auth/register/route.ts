@@ -1,0 +1,104 @@
+import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { z } from "zod";
+import prisma from "@/lib/prisma";
+
+// TODO: Add rate limiting (e.g., via next-rate-limit or middleware-level rate limiting)
+// before production deployment. This endpoint is unauthenticated and performs
+// CPU-intensive bcrypt hashing, making it a target for resource exhaustion attacks.
+
+const registerSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+    ),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  role: z.enum(["STUDENT", "INSTRUCTOR"]),
+});
+
+/**
+ * POST /api/auth/register
+ * Creates a new User record with a hashed password.
+ * This is the first step in the registration flow - after this,
+ * the user can sign in and create their profile (instructor or student).
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const validation = registerSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Validation failed",
+          details: validation.error.flatten().fieldErrors,
+        },
+        { status: 400 }
+      );
+    }
+
+    const { email, password, name, role } = validation.data;
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      // Return a generic 201 success response to prevent email enumeration.
+      // An attacker probing emails would otherwise distinguish existing accounts
+      // (409) from new ones (201). The real user will discover the conflict when
+      // they attempt to sign in or when they receive a "you already have an
+      // account" notification (if email sending is implemented).
+      return NextResponse.json(
+        {
+          success: true,
+          data: {
+            id: "registered",
+            email,
+            name,
+            role,
+          },
+        },
+        { status: 201 }
+      );
+    }
+
+    // Hash the password
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    // Create the user record
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        name,
+        role,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("[API] POST /api/auth/register error:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to create account" },
+      { status: 500 }
+    );
+  }
+}

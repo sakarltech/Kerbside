@@ -1,0 +1,28 @@
+{
+  "project_type": "Next.js 14 App Router full-stack marketplace web application",
+  "language": "TypeScript",
+  "build_system": "npm with Next.js build tooling",
+  "test_framework": "Jest with React Testing Library for components, integration tests for API routes",
+  "build_command": "npm run build",
+  "test_command": "npm test",
+  "verification_instructions": "1. Run npm run build to check TypeScript compilation and Next.js build. 2. Run npm test to execute test suite. 3. Verify all source files have proper TypeScript types.",
+  "snapshot_or_generated_files": "Prisma client generated from schema via npx prisma generate. Database migrations via npx prisma migrate dev.",
+  "setup_instructions": "1. npm install (requires network). 2. Copy .env.example to .env.local and fill in values. 3. npx prisma generate. 4. npx prisma migrate dev. 5. npm run dev.",
+  "environment_constraints": "INTEGRATIONS_ONLY network - cannot install npm packages from public registries. All source code will be created but npm install cannot run. TypeScript compiler (tsc) is available globally. Focus on creating complete, well-structured source code ready for deployment once dependencies are installed.",
+  "contribution_requirements": "Standard Next.js App Router conventions. All code in TypeScript. Prisma for database. Stripe Connect for payments. NextAuth.js for auth. Tailwind CSS for styling.",
+  "key_patterns": "Next.js App Router with src/app directory structure, server components by default, client components marked with 'use client', API routes in app/api/, Prisma schema in prisma/schema.prisma, shared types in src/types/, utility functions in src/lib/",
+  "relevant_files": [
+    "package.json",
+    "tsconfig.json",
+    "next.config.js",
+    "tailwind.config.ts",
+    "prisma/schema.prisma",
+    "src/app/layout.tsx",
+    "src/app/page.tsx",
+    "src/lib/prisma.ts",
+    "src/lib/auth.ts",
+    "src/lib/stripe.ts",
+    "src/lib/matching.ts"
+  ],
+  "directory_structure": "src/app/ - Next.js pages and API routes | src/components/ - Reusable UI components | src/lib/ - Utility functions and service logic | src/types/ - TypeScript type definitions | prisma/ - Database schema and migrations | public/ - Static assets"
+}

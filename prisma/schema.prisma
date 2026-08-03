@@ -1,0 +1,230 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+
+enum UserRole {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  NO_PREFERENCE
+}
+
+enum TeachingStyle {
+  PATIENT
+  INTENSIVE
+  STRUCTURED
+  RELAXED
+  ADAPTIVE
+}
+
+enum CarType {
+  MANUAL
+  AUTOMATIC
+  BOTH
+}
+
+enum LessonFormat {
+  HOURLY
+  BLOCK_5
+  BLOCK_10
+}
+
+// Models
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  name          String
+  role          UserRole @default(STUDENT)
+  phone         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  instructorProfile InstructorProfile?
+  studentProfile    StudentProfile?
+  sentMessages      Message[]          @relation("SentMessages")
+  receivedMessages  Message[]          @relation("ReceivedMessages")
+
+  @@map("users")
+}
+
+model InstructorProfile {
+  id                 String        @id @default(cuid())
+  userId             String        @unique @map("user_id")
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adiNumber          String?       @map("adi_number")
+  adiVerified        Boolean       @default(false) @map("adi_verified")
+  bio                String?
+  profilePhoto       String?       @map("profile_photo")
+  specialisms        String[]
+  teachingStyle      TeachingStyle? @map("teaching_style")
+  languages          String[]
+  carType            CarType?      @map("car_type")
+  gender             Gender?
+  anxietyFriendly    Boolean       @default(false) @map("anxiety_friendly")
+  passRate           Float?        @map("pass_rate")
+  hourlyRate         Decimal?      @map("hourly_rate") @db.Decimal(10, 2)
+  coveragePostcodes  String[]      @map("coverage_postcodes")
+  stripeAccountId    String?       @map("stripe_account_id")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  availability  Availability[]
+  bookings      Booking[]        @relation("InstructorBookings")
+  reviews       Review[]         @relation("InstructorReviews")
+  progress      Progress[]
+  matchScores   MatchScore[]     @relation("InstructorMatchScores")
+
+  @@map("instructor_profiles")
+}
+
+model StudentProfile {
+  id                     String         @id @default(cuid())
+  userId                 String         @unique @map("user_id")
+  user                   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postcode               String?
+  preferredGender        Gender?        @map("preferred_gender")
+  preferredLanguage      String?        @map("preferred_language")
+  preferredTeachingStyle TeachingStyle? @map("preferred_teaching_style")
+  preferredCarType       CarType?       @map("preferred_car_type")
+  anxietyFriendly        Boolean        @default(false) @map("anxiety_friendly")
+  preferredLessonFormat  LessonFormat?  @map("preferred_lesson_format")
+  pickupFlexibilityKm    Int            @default(5) @map("pickup_flexibility_km")
+  goalTimeline           String?        @map("goal_timeline")
+  availabilityPattern    String?        @map("availability_pattern")
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime       @updatedAt @map("updated_at")
+
+  bookings    Booking[]    @relation("StudentBookings")
+  reviews     Review[]     @relation("StudentReviews")
+  progress    Progress[]
+  matchScores MatchScore[] @relation("StudentMatchScores")
+
+  @@map("student_profiles")
+}
+
+model Availability {
+  id           String   @id @default(cuid())
+  instructorId String   @map("instructor_id")
+  instructor   InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  dayOfWeek    Int      @map("day_of_week") // 0 = Sunday, 6 = Saturday
+  startTime    String   @map("start_time") // HH:mm format
+  endTime      String   @map("end_time")   // HH:mm format
+  isRecurring  Boolean  @default(true) @map("is_recurring")
+  specificDate DateTime? @map("specific_date")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("availabilities")
+}
+
+model Booking {
+  id               String        @id @default(cuid())
+  studentId        String        @map("student_id")
+  student          StudentProfile @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Cascade)
+  instructorId     String        @map("instructor_id")
+  instructor       InstructorProfile @relation("InstructorBookings", fields: [instructorId], references: [id], onDelete: Cascade)
+  dateTime         DateTime      @map("date_time")
+  durationMinutes  Int           @map("duration_minutes")
+  status           BookingStatus @default(PENDING)
+  amount           Decimal       @db.Decimal(10, 2)
+  commission       Decimal       @db.Decimal(10, 2)
+  paymentIntentId  String?       @map("payment_intent_id")
+  stripeTransferId String?       @map("stripe_transfer_id")
+  notes            String?
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  review   Review?
+  messages Message[]
+
+  @@map("bookings")
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  bookingId    String   @unique @map("booking_id")
+  booking      Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  studentId    String   @map("student_id")
+  student      StudentProfile @relation("StudentReviews", fields: [studentId], references: [id], onDelete: Cascade)
+  instructorId String   @map("instructor_id")
+  instructor   InstructorProfile @relation("InstructorReviews", fields: [instructorId], references: [id], onDelete: Cascade)
+  rating       Int      // 1-5
+  comment      String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("reviews")
+}
+
+model Progress {
+  id           String   @id @default(cuid())
+  studentId    String   @map("student_id")
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  instructorId String   @map("instructor_id")
+  instructor   InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  skillName    String   @map("skill_name")
+  level        Int      // 1-5
+  notes        String?
+  date         DateTime @default(now())
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("progress_entries")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String   @map("sender_id")
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String   @map("receiver_id")
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  bookingId  String?  @map("booking_id")
+  booking    Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  content    String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("messages")
+}
+
+model MatchScore {
+  id               String   @id @default(cuid())
+  studentId        String   @map("student_id")
+  student          StudentProfile @relation("StudentMatchScores", fields: [studentId], references: [id], onDelete: Cascade)
+  instructorId     String   @map("instructor_id")
+  instructor       InstructorProfile @relation("InstructorMatchScores", fields: [instructorId], references: [id], onDelete: Cascade)
+  overallScore     Float    @map("overall_score")
+  locationScore    Float    @map("location_score")
+  genderScore      Float    @map("gender_score")
+  languageScore    Float    @map("language_score")
+  styleScore       Float    @map("style_score")
+  carScore         Float    @map("car_score")
+  availabilityScore Float   @map("availability_score")
+  anxietyScore     Float    @map("anxiety_score")
+  specialismScore  Float    @map("specialism_score")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@unique([studentId, instructorId])
+  @@map("match_scores")
+}

@@ -1,0 +1,39 @@
+{
+  "id": "FEAT-001",
+  "type": "chore",
+  "description": "Project foundation - Create the complete Next.js project structure with all configuration files, database schema, authentication setup, and core library code. This establishes the entire project skeleton including package.json, TypeScript config, Tailwind CSS, Prisma schema with all models, NextAuth configuration, Stripe Connect setup, and shared utilities.",
+  "status": "completed",
+  "steps": [
+    "Create package.json with all required dependencies (next, react, prisma, @prisma/client, next-auth, stripe, @stripe/stripe-js, tailwindcss, postcss, autoprefixer, typescript, @types/react, @types/node, jest, @testing-library/react, zod, date-fns, lucide-react)",
+    "Create tsconfig.json with strict mode, path aliases (@/ -> src/), and Next.js recommended settings",
+    "Create next.config.js with appropriate configuration",
+    "Create tailwind.config.ts with custom KerbSide theme colors (brand green #22c55e, dark #1a1a2e, accent blue #3b82f6), responsive breakpoints, and custom component styles",
+    "Create postcss.config.js",
+    "Create .env.example with all required environment variables documented (DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET)",
+    "Create prisma/schema.prisma with complete data model: User (with role enum ADI/STUDENT/ADMIN), InstructorProfile (specialisms, teaching_style, languages, car_type, gender, anxiety_friendly, pass_rate, hourly_rate, bio, profile_photo, adi_number, adi_verified, coverage_postcodes), StudentProfile (preferences for gender, language, teaching_style, car_type, availability_pattern, anxiety_friendly, lesson_format, pickup_flexibility, goal_timeline, postcode), Availability (instructor slots with day, start_time, end_time, recurring), Booking (student, instructor, datetime, duration, status, payment_intent_id, amount, commission), Review (rating, comment, booking_id, verified), Progress (student, instructor, skill entries with dates and notes), Message (sender, receiver, content, read status, booking_id), MatchScore (student, instructor, score, factors breakdown)",
+    "Create src/lib/prisma.ts - Prisma client singleton for Next.js",
+    "Create src/lib/auth.ts - NextAuth configuration with credentials provider, session strategy, role-based callbacks",
+    "Create src/lib/stripe.ts - Stripe client initialization and helper functions (createConnectAccount, createPaymentIntent, calculateCommission at 15%)",
+    "Create src/lib/matching.ts - Smart matching engine that scores instructors against student preferences (location proximity, gender match, language match, teaching style, car type, availability overlap, anxiety-friendly, specialisms). Each factor weighted and produces a 0-100 score.",
+    "Create src/lib/validators.ts - Zod validation schemas for all forms (instructor signup, student signup, booking, review, message)",
+    "Create src/types/index.ts - Shared TypeScript interfaces and types for the application",
+    "Create src/middleware.ts - Next.js middleware for route protection (auth required routes, role-based access)",
+    "Create .gitignore with node_modules, .next, .env.local, prisma/*.db patterns",
+    "Create README.md with comprehensive project documentation including setup instructions, architecture overview, tech stack, and development guide"
+  ],
+  "acceptance_criteria": [
+    "All configuration files (package.json, tsconfig.json, next.config.js, tailwind.config.ts, postcss.config.js) are present and properly structured",
+    "Prisma schema contains all required models with proper relations and enums",
+    "Authentication library supports role-based access for ADI, STUDENT, and ADMIN roles",
+    "Matching engine implements weighted scoring across all preference dimensions",
+    "All TypeScript files pass syntax validation",
+    "Environment variables are documented in .env.example"
+  ],
+  "verification": [
+    "Run tsc --noEmit on the lib files to check TypeScript syntax (may need to create a minimal tsconfig for validation)",
+    "Verify all expected files exist with find command",
+    "Check prisma schema is valid with basic syntax review"
+  ],
+  "blocked_reason": null,
+  "findings": "All 16 project foundation files created successfully. Config files validated with Node.js require(). TypeScript source files cannot be fully type-checked without npm install (INTEGRATIONS_ONLY network mode), but syntax is correct. The globally installed tsc is v7.0.2 which has removed baseUrl option - the project's tsconfig.json still uses baseUrl for compatibility with the project's declared typescript@5.3.3, which is fine once dependencies are installed. package-lock.json was pre-existing in the repo and was not modified or committed."
+}
