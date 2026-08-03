@@ -69,8 +69,8 @@ describe("POST /api/bookings", () => {
   let POST: (request: NextRequest) => Promise<Response>;
 
   beforeAll(async () => {
-    const module = await import("@/app/api/bookings/route");
-    POST = module.POST;
+    const routeModule = await import("@/app/api/bookings/route");
+    POST = routeModule.POST;
   });
 
   beforeEach(() => {
@@ -189,8 +189,8 @@ describe("GET /api/bookings", () => {
   let GET: (request: NextRequest) => Promise<Response>;
 
   beforeAll(async () => {
-    const module = await import("@/app/api/bookings/route");
-    GET = module.GET;
+    const routeModule = await import("@/app/api/bookings/route");
+    GET = routeModule.GET;
   });
 
   beforeEach(() => {
@@ -259,8 +259,8 @@ describe("PUT /api/bookings/[id]", () => {
   ) => Promise<Response>;
 
   beforeAll(async () => {
-    const module = await import("@/app/api/bookings/[id]/route");
-    PUT = module.PUT;
+    const routeModule = await import("@/app/api/bookings/[id]/route");
+    PUT = routeModule.PUT;
   });
 
   beforeEach(() => {
