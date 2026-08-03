@@ -7,11 +7,19 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "type-check": "tsc --noEmit",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "test:watch": "jest --watch",
+    "db:seed": "npx prisma db seed",
+    "db:migrate": "npx prisma migrate dev",
+    "db:generate": "npx prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
+  },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
