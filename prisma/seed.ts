@@ -512,7 +512,7 @@ async function main() {
     { studentIdx: 9, instructorIdx: 9, daysOffset: 2, duration: 120, status: "CONFIRMED" as const },
   ];
 
-  const bookings = [];
+  const bookings: any[] = [];
   for (const data of bookingsData) {
     const dateTime = new Date(now.getTime() + data.daysOffset * 86400000);
     const hourlyRate = instructorData[data.instructorIdx].profile.hourlyRate;
