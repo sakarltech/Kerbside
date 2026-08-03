@@ -1,0 +1,7 @@
+{
+  "task_id": "task-kerbside-mvp",
+  "task_description": "Build complete KerbSide marketplace - a two-sided marketplace connecting UK driving instructors (ADIs) with learner drivers. Full Next.js application with smart matching engine, booking system, payments via Stripe Connect, progress tracking, messaging, and instructor continuity.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004"],
+  "blocked_reason": null
+}
