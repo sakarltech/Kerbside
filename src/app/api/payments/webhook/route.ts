@@ -42,8 +42,10 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case "payment_intent.succeeded": {
         const paymentIntent = event.data.object as { id: string };
+        // Only transition from PENDING to CONFIRMED. This prevents Stripe retries
+        // from re-confirming a booking that was subsequently cancelled or completed.
         await prisma.booking.updateMany({
-          where: { paymentIntentId: paymentIntent.id },
+          where: { paymentIntentId: paymentIntent.id, status: "PENDING" },
           data: { status: "CONFIRMED" },
         });
         break;
@@ -51,8 +53,10 @@ export async function POST(request: NextRequest) {
 
       case "payment_intent.payment_failed": {
         const paymentIntent = event.data.object as { id: string };
+        // Only transition from PENDING to CANCELLED. This prevents Stripe retries
+        // from cancelling a booking that was already confirmed or completed.
         await prisma.booking.updateMany({
-          where: { paymentIntentId: paymentIntent.id },
+          where: { paymentIntentId: paymentIntent.id, status: "PENDING" },
           data: { status: "CANCELLED" },
         });
         break;

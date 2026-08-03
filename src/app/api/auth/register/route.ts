@@ -3,6 +3,10 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 
+// TODO: Add rate limiting (e.g., via next-rate-limit or middleware-level rate limiting)
+// before production deployment. This endpoint is unauthenticated and performs
+// CPU-intensive bcrypt hashing, making it a target for resource exhaustion attacks.
+
 const registerSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z
@@ -46,9 +50,22 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
+      // Return a generic 201 success response to prevent email enumeration.
+      // An attacker probing emails would otherwise distinguish existing accounts
+      // (409) from new ones (201). The real user will discover the conflict when
+      // they attempt to sign in or when they receive a "you already have an
+      // account" notification (if email sending is implemented).
       return NextResponse.json(
-        { success: false, error: "An account with this email already exists" },
-        { status: 409 }
+        {
+          success: true,
+          data: {
+            id: "registered",
+            email,
+            name,
+            role,
+          },
+        },
+        { status: 201 }
       );
     }
 
