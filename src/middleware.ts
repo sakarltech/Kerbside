@@ -6,7 +6,16 @@ import { getToken } from "next-auth/jwt";
 const protectedRoutes = ["/dashboard"];
 
 // API routes that require authentication
-const protectedApiRoutes = ["/api/bookings", "/api/messages", "/api/profile"];
+const protectedApiRoutes = [
+  "/api/bookings",
+  "/api/messages",
+  "/api/profile",
+  "/api/progress",
+  "/api/admin",
+  "/api/payments/connect",
+  "/api/matching",
+  "/api/students",
+];
 
 // Public routes that should redirect authenticated users
 const authRoutes = ["/auth/signin", "/auth/signup"];
@@ -60,6 +69,11 @@ export const config = {
     "/api/bookings/:path*",
     "/api/messages/:path*",
     "/api/profile/:path*",
+    "/api/progress/:path*",
+    "/api/admin/:path*",
+    "/api/payments/connect/:path*",
+    "/api/matching/:path*",
+    "/api/students/:path*",
     "/auth/:path*",
   ],
 };

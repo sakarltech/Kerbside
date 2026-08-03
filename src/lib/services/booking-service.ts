@@ -128,7 +128,9 @@ export class BookingService {
   }
 
   /**
-   * Mark a booking as completed and trigger instructor payment transfer.
+   * Mark a booking as completed.
+   * Note: Instructor payout is handled automatically by Stripe destination charges
+   * (transfer_data.destination) when the PaymentIntent succeeds. No manual transfer needed.
    */
   async completeBooking(bookingId: string): Promise<Booking> {
     const booking = await prisma.booking.findUnique({
@@ -142,38 +144,12 @@ export class BookingService {
       throw new Error("Booking not found");
     }
 
-    // Calculate instructor payout (total minus commission)
-    const instructorPayout = Math.round(
-      (Number(booking.amount) - Number(booking.commission)) * 100
-    );
-
-    // Transfer funds to instructor if they have a Stripe account
-    if (booking.instructor.stripeAccountId && instructorPayout > 0) {
-      const transferId = await paymentService.createTransfer(
-        instructorPayout,
-        booking.instructor.stripeAccountId,
-        bookingId
-      );
-
-      await prisma.booking.update({
-        where: { id: bookingId },
-        data: {
-          status: "COMPLETED",
-          stripeTransferId: transferId,
-        },
-      });
-    } else {
-      await prisma.booking.update({
-        where: { id: bookingId },
-        data: { status: "COMPLETED" },
-      });
-    }
-
-    const updatedBooking = await prisma.booking.findUnique({
+    const updatedBooking = await prisma.booking.update({
       where: { id: bookingId },
+      data: { status: "COMPLETED" },
     });
 
-    return updatedBooking!;
+    return updatedBooking;
   }
 
   /**

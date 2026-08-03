@@ -167,7 +167,9 @@ function calculateCarScore(
 
 /**
  * Calculate availability overlap score.
- * Compares student availability pattern with instructor availability slots.
+ * Parses the student's availabilityPattern (e.g. "weekdays", "evenings", "weekends",
+ * "mornings") and compares against instructor availability slots to produce a
+ * meaningful overlap signal.
  */
 function calculateAvailabilityScore(
   studentPattern: string | null,
@@ -177,17 +179,77 @@ function calculateAvailabilityScore(
     return 50; // Neutral if no data available
   }
 
-  // If instructor has broad availability (5+ slots), high score
-  if (instructorAvailability.length >= 5) {
-    return 80;
+  const pattern = studentPattern.toLowerCase().trim();
+
+  // Parse the student pattern into day/time constraints
+  const wantsWeekdays = /weekday|mon|tue|wed|thu|fri|week\s*day/.test(pattern);
+  const wantsWeekends = /weekend|sat|sun/.test(pattern);
+  const wantsMornings = /morning|am|early/.test(pattern);
+  const wantsAfternoons = /afternoon|midday|lunch/.test(pattern);
+  const wantsEvenings = /evening|night|pm|late/.test(pattern);
+
+  // If we cannot parse anything meaningful, fall back to slot-count heuristic
+  const hasTimePreference = wantsMornings || wantsAfternoons || wantsEvenings;
+  const hasDayPreference = wantsWeekdays || wantsWeekends;
+
+  if (!hasTimePreference && !hasDayPreference) {
+    // Unrecognized pattern - use slot count as fallback
+    if (instructorAvailability.length >= 5) return 80;
+    if (instructorAvailability.length >= 3) return 60;
+    return 40;
   }
 
-  // Basic availability - some slots available
-  if (instructorAvailability.length >= 3) {
-    return 60;
+  // Filter instructor slots that match the student's pattern
+  let matchingSlots = 0;
+
+  for (const slot of instructorAvailability) {
+    let dayMatch = true;
+    let timeMatch = true;
+
+    // Check day preference
+    if (hasDayPreference) {
+      const isWeekday = slot.dayOfWeek >= 1 && slot.dayOfWeek <= 5;
+      const isWeekend = slot.dayOfWeek === 0 || slot.dayOfWeek === 6;
+
+      if (wantsWeekdays && !wantsWeekends) {
+        dayMatch = isWeekday;
+      } else if (wantsWeekends && !wantsWeekdays) {
+        dayMatch = isWeekend;
+      }
+      // If both weekdays and weekends are wanted, any day matches
+    }
+
+    // Check time preference
+    if (hasTimePreference) {
+      const startHour = parseInt(slot.startTime.split(":")[0], 10);
+
+      if (wantsMornings && !wantsAfternoons && !wantsEvenings) {
+        timeMatch = startHour < 12;
+      } else if (wantsAfternoons && !wantsMornings && !wantsEvenings) {
+        timeMatch = startHour >= 12 && startHour < 17;
+      } else if (wantsEvenings && !wantsMornings && !wantsAfternoons) {
+        timeMatch = startHour >= 17;
+      } else if (wantsMornings && wantsAfternoons) {
+        timeMatch = startHour < 17;
+      } else if (wantsAfternoons && wantsEvenings) {
+        timeMatch = startHour >= 12;
+      } else if (wantsMornings && wantsEvenings) {
+        timeMatch = startHour < 12 || startHour >= 17;
+      }
+      // If all time preferences, any time matches
+    }
+
+    if (dayMatch && timeMatch) {
+      matchingSlots++;
+    }
   }
 
-  return 40;
+  // Score based on how many slots match the student's pattern
+  if (matchingSlots === 0) return 10;
+  if (matchingSlots === 1) return 40;
+  if (matchingSlots === 2) return 60;
+  if (matchingSlots >= 3 && matchingSlots < 5) return 80;
+  return 100; // 5+ matching slots
 }
 
 /**
