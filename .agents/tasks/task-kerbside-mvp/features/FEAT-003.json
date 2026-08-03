@@ -1,0 +1,48 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "API routes and backend logic - Create all Next.js API route handlers for the marketplace including authentication endpoints, instructor/student CRUD, matching engine endpoint, booking/payment processing, messaging, reviews, and progress tracking.",
+  "status": "in_progress",
+  "steps": [
+    "Create src/app/api/auth/[...nextauth]/route.ts - NextAuth route handler using the auth config from src/lib/auth.ts",
+    "Create src/app/api/instructors/route.ts - GET (list/search instructors with filters), POST (create instructor profile)",
+    "Create src/app/api/instructors/[id]/route.ts - GET (instructor details), PUT (update profile), DELETE (deactivate)",
+    "Create src/app/api/instructors/[id]/availability/route.ts - GET (available slots), POST (add slot), PUT (update slot), DELETE (remove slot)",
+    "Create src/app/api/instructors/[id]/reviews/route.ts - GET (instructor reviews list)",
+    "Create src/app/api/students/route.ts - GET (list students for admin), POST (create student profile)",
+    "Create src/app/api/students/[id]/route.ts - GET (student details), PUT (update preferences)",
+    "Create src/app/api/matching/route.ts - POST (run matching engine for a student, returns ranked instructors with scores and factor breakdowns)",
+    "Create src/app/api/bookings/route.ts - GET (list bookings for user), POST (create booking with Stripe payment intent)",
+    "Create src/app/api/bookings/[id]/route.ts - GET (booking details), PUT (update status - confirm/cancel/complete)",
+    "Create src/app/api/bookings/[id]/review/route.ts - POST (submit review for completed booking)",
+    "Create src/app/api/payments/webhook/route.ts - POST (Stripe webhook handler for payment confirmations, refunds)",
+    "Create src/app/api/payments/connect/route.ts - POST (create Stripe Connect account link for instructor onboarding)",
+    "Create src/app/api/messages/route.ts - GET (list conversations), POST (send message)",
+    "Create src/app/api/messages/[conversationId]/route.ts - GET (messages in conversation), PUT (mark as read)",
+    "Create src/app/api/progress/route.ts - GET (student progress entries), POST (instructor logs progress for student)",
+    "Create src/app/api/progress/[id]/route.ts - GET (specific progress entry), PUT (update progress notes)",
+    "Create src/app/api/admin/instructors/route.ts - GET (pending verifications), PUT (approve/reject ADI verification)",
+    "Create src/lib/services/matching-service.ts - Matching service class that orchestrates the scoring algorithm with configurable weights",
+    "Create src/lib/services/booking-service.ts - Booking service handling creation, cancellation, instructor continuity (auto-suggest replacement)",
+    "Create src/lib/services/payment-service.ts - Payment service wrapping Stripe operations (create intent, process webhook, handle refunds, calculate 15% commission)",
+    "Create src/lib/services/notification-service.ts - Notification service for booking confirmations, cancellations, messages"
+  ],
+  "acceptance_criteria": [
+    "All API routes follow Next.js App Router route handler conventions (export async function GET/POST/PUT/DELETE)",
+    "Routes include proper authentication checks using getServerSession",
+    "Request bodies are validated using Zod schemas from src/lib/validators.ts",
+    "Error responses use consistent format with appropriate HTTP status codes",
+    "Matching endpoint returns scored results with factor breakdowns",
+    "Payment routes handle Stripe Connect flow with 15% commission",
+    "Webhook route verifies Stripe signature",
+    "Booking cancellation triggers instructor continuity logic",
+    "All routes are properly typed with TypeScript"
+  ],
+  "verification": [
+    "Verify all API route files exist",
+    "Check TypeScript syntax on key route files",
+    "Verify consistent error handling patterns across routes"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
