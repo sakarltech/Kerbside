@@ -777,3 +777,231 @@ Day 7: Rebooking
 | Messaging | Student/Instructor | Active booking exists | Messages exchanged |
 | Cancellation | Student or Instructor | Cancel button | Refund processed, optionally continuity triggered |
 | ADI Verification | Admin | Instructor submits ADI | Verified badge granted |
+
+---
+
+## 13. Instructor Earnings & Payout Flow
+
+### Overview
+Instructors can view their earnings, understand the commission breakdown, and track Stripe payouts to their bank account.
+
+### Step-by-Step Flow
+
+```
+[Instructor Dashboard] --> [Click "Earnings"]
+     |
+     v
+[Earnings Overview Page]
+  - Total earned (this week / month / all time)
+  - Commission paid (15% breakdown)
+  - Pending payouts
+  - Payout history
+     |
+     v
+[Earnings are calculated from completed bookings]
+  - Each completed booking contributes:
+    * Lesson price - 15% commission = instructor earnings
+  - Stripe handles actual bank transfers on schedule
+```
+
+### Detailed Steps
+
+**Viewing Earnings**
+1. Instructor navigates to `/dashboard/instructor/earnings`
+2. Page loads earnings summary from completed bookings
+3. Displays:
+   - This Week: sum of completed bookings this week (post-commission)
+   - This Month: sum of completed bookings this month (post-commission)
+   - Total Commission Paid: sum of all commission amounts
+   - Pending: bookings confirmed but not yet completed
+
+**Earnings Calculation**
+```
+For each COMPLETED booking:
+  instructor_earnings = booking.amount - booking.commission
+  platform_earnings = booking.commission
+
+Example (GBP 35 lesson):
+  Student pays: GBP 35.00
+  Platform keeps: GBP 5.25 (15%)
+  Instructor receives: GBP 29.75 (85%)
+```
+
+**Payout Process**
+1. Stripe automatically pays out to instructor's bank account
+2. Payout schedule configured during Stripe Connect onboarding (daily/weekly)
+3. Instructor can view payout history in their Stripe dashboard
+4. KerbSide displays a simplified view of pending and completed payouts
+
+### Error States
+- Stripe account disconnected: Show warning and link to reconnect
+- No completed bookings: Show "No earnings yet - complete your first lesson!"
+- Payout delayed: Show Stripe status with explanation
+
+---
+
+## 14. Profile Edit Flow
+
+### Overview
+Both instructors and students can update their profile information after initial registration, triggering a re-run of the matching engine where relevant.
+
+### Instructor Profile Edit
+
+```
+[Dashboard] --> [Click "Profile"]
+     |
+     v
+[Profile Edit Page]
+  - All fields from registration visible
+  - Edit any field
+  - Save changes
+     |
+     v
+[Validate Changes]
+  - ADI number: still 6 digits
+  - Hourly rate: still 20-100
+  - Languages: still min 1
+  - Postcodes: still min 1
+     |
+     v
+[Save to Database]
+  - InstructorProfile updated
+  - updatedAt timestamp refreshed
+     |
+     v
+[Impact on Matching]
+  - Existing MatchScores become stale
+  - Next time a student runs matching, scores recalculate with new data
+```
+
+### Student Profile Edit
+
+```
+[Dashboard] --> [Click "Profile"]
+     |
+     v
+[Profile/Preferences Page]
+  - All preference fields editable
+  - Current values pre-filled
+     |
+     v
+[Update Preferences]
+  - Change any preference
+  - Save
+     |
+     v
+[Trigger Match Refresh]
+  - System re-runs matching with updated preferences
+  - New match scores replace cached ones
+  - Dashboard shows updated match results
+```
+
+---
+
+## 15. Stripe Connect Recovery Flow
+
+### Overview
+If an instructor skipped Stripe Connect during registration or if their account was disconnected, they can set up or reconnect at any time.
+
+### Step-by-Step Flow
+
+```
+[Instructor Dashboard]
+  |
+  | Sees banner: "Set up payments to receive bookings"
+  | OR navigates to Profile > Payments
+  v
+[Click "Connect with Stripe"]
+  |
+  v
+[POST /api/payments/connect]
+  |
+  |--- Existing Stripe account? --> Create new Account Link
+  |--- No account? --> Create Express Account + Account Link
+  |
+  v
+[Redirect to Stripe Hosted Onboarding]
+  |
+  | Complete KYC: identity, bank details, business info
+  |
+  |--- ABANDONED: Return to KerbSide (still no payments)
+  |
+  | COMPLETED: Redirect back
+  v
+[Store/Update stripeAccountId]
+  |
+  v
+[Payments Enabled]
+  - Can now accept bookings with payment
+  - Existing profile now fully functional
+```
+
+---
+
+## 16. Match Score Refresh Flow
+
+### Overview
+Match scores are cached but can become stale when either party updates their profile. This flow describes when and how scores are refreshed.
+
+### Refresh Triggers
+
+```
+[Score Refresh Triggers]
+  |
+  +-- Student updates preferences --> Scores for that student recalculated
+  |
+  +-- Student clicks "Refresh Matches" --> On-demand recalculation
+  |
+  +-- Instructor updates profile --> Scores involving that instructor
+  |   become stale (recalculated on next student request)
+  |
+  +-- New instructor joins --> Not scored until a student requests matches
+  |
+  +-- Instructor adds/removes availability --> Availability score
+      changes on next calculation
+```
+
+### Caching Strategy
+
+```
+[Student requests matches]
+  |
+  v
+[Check: Fresh cached scores exist?]
+  |
+  +-- YES: Return cached results (fast, from MatchScore table)
+  |
+  +-- NO (or force refresh): Run full matching algorithm
+       |
+       v
+       [For each instructor: calculate 8 factors]
+       |
+       v
+       [Upsert MatchScore records]
+       |
+       v
+       [Return fresh results]
+```
+
+---
+
+## Updated Flow Summary Table
+
+| # | Flow | Primary Actor | Trigger | End State |
+|---|------|--------------|---------|-----------|
+| 1 | Instructor Onboarding | Instructor | Click "Sign Up as Instructor" | Profile live, payments enabled |
+| 2 | Student Registration | Student | Click "Find My Instructor" | Preferences saved, matches shown |
+| 3 | Smart Matching | System | Registration or manual refresh | Ranked results displayed |
+| 4 | Booking | Student | Click "Book a Lesson" | CONFIRMED booking, payment captured |
+| 5 | Payment Processing | System/Stripe | Booking creation | Funds held, 85/15 split |
+| 6 | Review Submission | Student | After COMPLETED booking | Rating and comment stored |
+| 7 | Progress Tracking | Instructor | After lesson completion | Skill levels updated |
+| 8 | In-App Messaging | Student/Instructor | Active booking exists | Messages exchanged |
+| 9 | Cancellation & Continuity | Student or Instructor | Cancel button | Refund + replacement suggestions |
+| 10 | ADI Verification | Admin | Instructor submits ADI | Verified badge granted |
+| 11 | End-to-End Journey | Student (Sarah) | First visit | Complete learning cycle |
+| 13 | Instructor Earnings | Instructor | View dashboard | Earnings summary visible |
+| 14 | Profile Edit | Student/Instructor | Update profile | Matches recalculated |
+| 15 | Stripe Connect Recovery | Instructor | Set up payments | Stripe account linked |
+| 16 | Match Score Refresh | System | Profile change or manual | Fresh scores cached |
+
